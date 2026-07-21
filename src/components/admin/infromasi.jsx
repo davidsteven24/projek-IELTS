@@ -1,0 +1,277 @@
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Link } from 'react-router-dom';
+import logoKionco from '../../assets/logo1.png';
+
+function EditInformation({ mode, data, onBack, onSave }) {
+  const [formData, setFormData] = useState({
+    informasi: data ? data.informasi : '',
+    gambarUrl: data ? data.gambar_url : '', 
+  });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    const payload = {
+      informasi: formData.informasi,
+      gambar_url: formData.gambarUrl
+    };
+
+    const isEdit = mode === 'edit' && data?.id;
+    const url = isEdit 
+      ? `http://localhost:5000/api/informasi/${data.id}` 
+      : 'http://localhost:5000/api/informasi';
+    const method = isEdit ? 'PUT' : 'POST';
+
+    fetch(url, {
+      method: method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    .then(res => res.json())
+    .then(() => {
+      alert(isEdit ? 'Data Informasi berhasil diperbarui!' : 'Data Informasi baru berhasil ditambahkan!');
+      if (onSave) onSave(); 
+      if (onBack) onBack(); 
+    })
+    .catch(err => console.error(err));
+  };
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, scale: 0.98 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.98 }}
+      className="w-full max-w-2xl bg-white rounded-3xl p-8 border border-orange-100 shadow-sm text-black"
+    >
+      <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-100">
+        <h3 className="text-xl font-bold text-gray-800">
+          {mode === 'edit' ? 'Edit Informasi Kampus' : 'Tambah Informasi Baru'}
+        </h3>
+        <button 
+          type="button"
+          onClick={onBack}
+          className="px-4 py-2 text-xs font-bold text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          ← Kembali
+        </button>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="flex flex-col gap-2">
+          <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Isi Informasi</label>
+          <textarea
+            required
+            rows="4"
+            value={formData.informasi}
+            onChange={(e) => setFormData({ ...formData, informasi: e.target.value })}
+            placeholder="Masukkan deskripsi informasi di sini..."
+            className="w-full px-4 py-3 bg-neutral-50 border border-gray-200 focus:border-orange-500 rounded-xl text-sm font-medium outline-none transition-colors resize-none"
+          />
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">URL / Nama File Gambar</label>
+          <input
+            type="text"
+            required
+            value={formData.gambarUrl}
+            onChange={(e) => setFormData({ ...formData, gambarUrl: e.target.value })}
+            placeholder="contoh: kampus-utama.jpg atau URL Gambar"
+            className="w-full px-4 py-3 bg-neutral-50 border border-gray-200 focus:border-orange-500 rounded-xl text-sm font-medium outline-none transition-colors"
+          />
+        </div>
+
+        <button
+          type="submit"
+          className="w-full py-3.5 bg-[#FF9233] hover:bg-orange-600 text-white rounded-xl text-xs font-bold tracking-wide shadow-md shadow-orange-500/10 transition-colors"
+        >
+          Simpan Data Informasi
+        </button>
+      </form>
+    </motion.div>
+  );
+}
+
+export default function InformationDashboard() {
+  const [currentView, setCurrentView] = useState('table'); 
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [tableData, setTableData] = useState([]);
+
+  useEffect(() => {
+    fetchInformationData();
+  }, []);
+
+  const fetchInformationData = () => {
+    fetch('http://localhost:5000/api/informasi')
+      .then(res => res.json())
+      .then(data => setTableData(data))
+      .catch(err => console.error(err));
+  };
+
+  const menuItems = [
+    { name: 'Informasi', label: 'Informasi', path: '/admin' },
+    { name: 'mitra campus', label: 'mitra campus', path: '/admin/mitra' },
+    { name: 'jadwal', label: 'jadwal', path: '/admin/jadwal' },
+    { name: 'biaya', label: 'biaya', path: '/admin/biaya' },
+    { name: 'daftar siswa', label: 'daftar siswa', path: '/admin/siswa' },
+  ];
+
+  const handleEditClick = (item) => {
+    setSelectedItem(item);
+    setCurrentView('edit');
+  };
+
+  const handleNewClick = () => {
+    setSelectedItem(null);
+    setCurrentView('new');
+  };
+
+  const handleDeleteClick = (id) => {
+    if (window.confirm('Apakah Anda yakin ingin menghapus data ini?')) {
+      fetch(`http://localhost:5000/api/informasi/${id}`, {
+        method: 'DELETE'
+      })
+      .then(res => res.json())
+      .then(() => {
+        alert('Data Informasi berhasil dihapus!');
+        fetchInformationData();
+      })
+      .catch(err => console.error(err));
+    }
+  };
+
+  return (
+    <div className="w-full min-h-screen bg-[#F8FAFC] font-sans flex flex-col select-none">
+      
+      <header className="w-full bg-white border-b border-gray-100 px-8 py-4 flex items-center justify-between">
+        <div className="flex flex-col">
+           <img 
+                        src={logoKionco} 
+                        alt="Logo Kion &amp; Co" 
+                        className="h-12 w-auto object-contain"
+                         
+                      />
+        </div>
+        <Link to="/" className="text-xs font-bold bg-neutral-100 hover:bg-neutral-200 text-neutral-600 px-4 py-2 rounded-xl transition-colors">
+          Logout
+        </Link>
+      </header>
+
+      <div className="flex flex-1 w-full max-w-7xl mx-auto p-6 gap-8 items-start">
+        
+        <aside className="w-64 bg-[#FF9233] rounded-3xl p-4 flex flex-col gap-2 shadow-xl shadow-orange-500/5 flex-shrink-0">
+          {menuItems.map((item) => {
+            const isActive = item.name === 'Informasi';
+            return (
+              <Link
+                key={item.name}
+                to={item.path}
+                className={`w-full px-5 py-3.5 rounded-xl text-sm font-bold capitalize text-left transition-all block ${
+                  isActive 
+                    ? 'bg-[#CC6A14] text-white shadow-inner' 
+                    : 'text-white/90 hover:bg-[#E67E22] hover:text-white'
+                }`}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
+        </aside>
+
+        <main className="flex-1 flex justify-center w-full">
+          <AnimatePresence mode="wait">
+            
+            {currentView === 'table' && (
+              <motion.div 
+                key="table-view"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="w-full flex flex-col gap-6"
+              >
+                <div className="w-full bg-white border border-gray-100 rounded-3xl shadow-sm overflow-hidden text-black">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-[#FF9233] text-white text-xs font-bold uppercase tracking-wider">
+                        <th className="py-4 px-6 border-r border-white/20 w-16 text-center">No</th>
+                        <th className="py-4 px-6 border-r border-white/20">Informasi</th>
+                        <th className="py-4 px-6">Gambar</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {tableData.length > 0 ? (
+                        tableData.map((row, index) => (
+                          <tr key={row.id} className="hover:bg-orange-50/20 transition-colors group">
+                            <td className="py-4 px-6 text-center font-bold text-gray-500 text-sm border-r border-gray-100">
+                              {index + 1}
+                            </td>
+                            <td className="py-4 px-6 text-gray-700 text-xs font-medium leading-relaxed border-r border-gray-100 max-w-md whitespace-pre-wrap">
+                              {row.informasi}
+                            </td>
+                            <td className="py-4 px-6">
+                              <div className="flex items-center justify-between gap-4">
+                                <span className="text-xs font-mono bg-neutral-100 text-neutral-600 px-2 py-1 rounded-md max-w-[150px] truncate">
+                                  🖼️ {row.gambar_url}
+                                </span>
+                                
+                                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <button 
+                                    type="button"
+                                    onClick={() => handleEditClick(row)}
+                                    className="px-3 py-1.5 bg-[#FF9233] hover:bg-orange-600 text-white rounded-lg text-[11px] font-bold transition-colors shadow-sm"
+                                  >
+                                    Edit
+                                  </button>
+                                  <button 
+                                    type="button"
+                                    onClick={() => handleDeleteClick(row.id)}
+                                    className="px-3 py-1.5 bg-rose-500 hover:bg-rose-600 text-white rounded-lg text-[11px] font-bold transition-colors shadow-sm"
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan="3" className="w-full py-16 text-center text-gray-400 text-xs font-medium">
+                            Belum ada database informasi yang terdaftar untuk saat ini.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="w-full flex justify-center">
+                  <button
+                    type="button"
+                    onClick={handleNewClick}
+                    className="px-12 py-3 bg-[#FF9233] hover:bg-orange-600 text-white rounded-xl text-xs font-bold tracking-wider uppercase shadow-md shadow-orange-500/10 transition-colors"
+                  >
+                    + New
+                  </button>
+                </div>
+              </motion.div>
+            )}
+
+            {(currentView === 'edit' || currentView === 'new') && (
+              <EditInformation 
+                key="edit-view"
+                mode={currentView}
+                data={selectedItem}
+                onBack={() => setCurrentView('table')}
+                onSave={fetchInformationData}
+              />
+            )}
+
+          </AnimatePresence>
+        </main>
+
+      </div>
+    </div>
+  );
+}

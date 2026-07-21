@@ -1,127 +1,142 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 
-export default function SignIn() {
-  const [formData, setFormData] = useState({ email: '', password: '' });
+export default function SignInPage({ onClose, onLoginSuccess }) {
+  const navigate = useNavigate();
+  
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleLogin = (e) => {
     e.preventDefault();
-    console.log('Logging in with:', formData);
-  };
+    setIsLoading(true);
 
-  // Varian Animasi untuk efek staggered (muncul berurutan dengan halus)
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { staggerChildren: 0.15, delayChildren: 0.1 }
-    }
-  };
+    const payload = { email, password };
 
-  const itemVariants = {
-    hidden: { opacity: 0, y: 15 },
-    visible: { 
-      opacity: 1, 
-      y: 0, 
-      transition: { type: "spring", stiffness: 100, damping: 15 } 
-    }
-  };
-
-  return (
-    <section id="signin-form" className="w-full min-h-screen bg-[#F2F2F2] ...">
+    fetch('http://localhost:5000/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    .then(res => {
+      if (!res.ok) {
+        return res.json().then(data => { throw new Error(data.error) });
+      }
+      return res.json();
+    })
+    .then(data => {
+      alert('Login Berhasil! Selamat Datang Admin.');
       
-      {/* Kotak Utama Sign In */}
-      <motion.div 
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-        className="w-full max-w-md bg-white border border-gray-200/80 p-8 md:p-10 rounded-3xl shadow-[0_20px_50px_-20px_rgba(0,0,0,0.05)] flex flex-col"
-      >
-        
-        {/* HEADER: Logo & Judul */}
-        <div className="flex flex-col items-center text-center mb-8">
-          {/* Logo Ramos */}
-          <motion.div 
-            variants={itemVariants}
-            className="w-12 h-12 bg-black rounded-xl flex items-center justify-center text-white shadow-md mb-4"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
-            </svg>
-          </motion.div>
+      if (onLoginSuccess) {
+        onLoginSuccess();
+      }
+      
+      onClose();          
+      navigate('/admin'); 
+    })
+    .catch(err => {
+      console.error(err);
+      alert(err.message || 'Terjadi kesalahan koneksi ke server.');
+    })
+    .finally(() => {
+      setIsLoading(false);
+    });
+  };
+  
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      
+      <div 
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm" 
+        onClick={onClose} 
+      />
 
-          <motion.h2 variants={itemVariants} className="text-2xl font-black text-black tracking-tight mb-1.5">
-            Selamat Datang Kembali
-          </motion.h2>
-          <motion.p variants={itemVariants} className="text-xs text-gray-400 font-medium">
-            Masukkan akun Anda untuk mengelola data akademik
-          </motion.p>
+      <div className="w-full max-w-3xl bg-white rounded-3xl shadow-2xl border border-gray-100 relative z-10 overflow-hidden text-black flex flex-col md:flex-row min-h-[450px] animate-in fade-in zoom-in-95 duration-200">
+        
+        <button 
+          onClick={onClose}
+          type="button"
+          className="btn btn-sm btn-circle absolute top-4 right-4 bg-gray-50 border-none hover:bg-gray-100 text-gray-400 hover:text-black z-20"
+        >
+          ✕
+        </button>
+
+        <div className="w-full md:w-1/2 bg-[#EFF4F9] p-8 flex flex-col items-center justify-between relative min-h-[200px] md:min-h-full">
+          <div className="absolute bottom-0 left-0 w-32 h-32 bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] [background-size:16px_16px] opacity-70 pointer-events-none" />
+          <div className="hidden md:block"></div>
+
+          <div className="text-center z-10 my-auto md:my-0">
+            <div className="flex items-center justify-center gap-1">
+              <span className="text-3xl font-black text-[#1e293b] tracking-tight">Kion &amp; Co.</span>
+            </div>
+            <p className="text-[10px] font-bold text-orange-500 tracking-widest uppercase mt-0.5">Education Consultant</p>
+          </div>
+
+          <div className="w-36 md:w-44 z-10 hidden sm:block">
+            <img 
+              src="https://img.freepik.com/free-vector/graduation-cap-with_23-2147502390.jpg" 
+              alt="Graduation Illustration" 
+              className="w-full h-auto mix-blend-multiply opacity-80"
+            />
+          </div>
         </div>
 
-        {/* FORM ISIAN */}
-        <form onSubmit={handleSubmit} className="space-y-5">
-          
-          {/* Input Email */}
-          <motion.div variants={itemVariants} className="flex flex-col">
-            <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2 pl-1">
-              Alamat Email
-            </label>
-            <input 
-              type="email" 
-              required
-              placeholder="nama@kampus.id"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="w-full bg-gray-50 border border-gray-200 text-sm font-medium rounded-xl px-4 py-3 text-black placeholder-gray-400 focus:outline-none focus:border-black focus:bg-white transition-all duration-200"
-            />
-          </motion.div>
+        <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center bg-white">
+          <div className="mb-8">
+            <h3 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">Welcome Back!</h3>
+            <p className="text-xs text-gray-400 mt-1.5 font-medium">sign in to continue to your account</p>
+          </div>
 
-          {/* Input Password */}
-          <motion.div variants={itemVariants} className="flex flex-col">
-            <div className="flex justify-between items-center mb-2 pl-1">
-              <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-                Kata Sandi
-              </label>
-              <a href="#forgot" className="text-[11px] font-bold text-gray-400 hover:text-black transition-colors">
-                Lupa Sandi?
-              </a>
+          <form onSubmit={handleLogin} className="space-y-5">
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-gray-700">Email Address</label>
+              <div className="relative flex items-center">
+                <span className="absolute left-4 text-gray-400 text-xs">✉</span>
+                <input 
+                  type="email" 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="your@email.com" 
+                  className="w-full pl-10 pr-4 py-3 bg-[#F9F7F7] border border-transparent focus:border-gray-300 focus:bg-white rounded-lg text-xs font-medium outline-none transition-all text-black" 
+                  required 
+                />
+              </div>
             </div>
-            <input 
-              type="password" 
-              required
-              placeholder="••••••••"
-              value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              className="w-full bg-gray-50 border border-gray-200 text-sm font-medium rounded-xl px-4 py-3 text-black placeholder-gray-400 focus:outline-none focus:border-black focus:bg-white transition-all duration-200"
-            />
-          </motion.div>
+            
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-gray-700">Password</label>
+              <div className="relative flex items-center">
+                <span className="absolute left-4 text-gray-400 text-xs">🔒</span>
+                <input 
+                  type="password" 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your Password" 
+                  className="w-full pl-10 pr-4 py-3 bg-[#F9F7F7] border border-transparent focus:border-gray-300 focus:bg-white rounded-lg text-xs font-medium outline-none transition-all text-black" 
+                  required 
+                />
+              </div>
+            </div>
 
-          {/* Opsi Ingat Saya */}
-          <motion.div variants={itemVariants} className="flex items-center gap-2 pt-1 pl-1">
-            <input 
-              type="checkbox" 
-              id="remember" 
-              className="w-4 h-4 rounded-md border-gray-300 text-black focus:ring-black accent-black cursor-pointer"
-            />
-            <label htmlFor="remember" className="text-xs font-semibold text-gray-500 cursor-pointer select-none">
-              Ingat perangkat ini
-            </label>
-          </motion.div>
-
-          {/* Tombol Submit Sign In */}
-          <motion.div variants={itemVariants} className="pt-3">
-            <motion.button 
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              type="submit"
-              className="w-full py-3.5 bg-black hover:bg-neutral-800 text-white rounded-xl text-xs font-bold tracking-wide shadow-md transition-colors duration-200"
+            <button 
+              type="submit" 
+              disabled={isLoading}
+              className="btn w-full mt-4 bg-[#FF9838] hover:bg-[#e68228] border-none text-white text-sm font-bold tracking-wide shadow-sm shadow-orange-200 capitalize"
             >
-              Masuk ke Dashboard
-            </motion.button>
-          </motion.div>
+              {isLoading ? (
+                <>
+                  <span className="loading loading-spinner text-white"></span>
+                  Logging in...
+                </>
+              ) : (
+                "login"
+              )}
+            </button>
+          </form>
+        </div>
 
-        </form>
-      </motion.div>
-    </section>
+      </div>
+    </div>
   );
 }
